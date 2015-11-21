@@ -113,8 +113,8 @@ Chat.prototype.onMessage = function(msg) {
     return;
   }
 
-  for(var i in config.ignoreList) {
-    if(config.ignoreList[i] == msg.pseudo_lower) return;
+  for(var i in this.config.ignoreList) {
+    if(this.config.ignoreList[i] == msg.pseudo_lower) return;
   }
 
   if(typeof msg.color === 'undefined' || msg.color === false) msg.color = 'white';
