@@ -4,49 +4,69 @@ var readline = require('readline');
 var setcolor = require('ansi-color').set;
 var fs = require('fs');
 
+var Util = {
+  filter: function(msg) {
+    // Citation
+    var citation = msg.match(/<bl.*?>(.*?)<\/b.*?e>/);
+    if(citation) {
+      var user_cite = citation[0].match(/.*?>Par (.*?)<.*?r>/);
+      citation = citation[0].replace(/.*?r>/, '');
+      var message = msg.replace(/.*?ote>/, '');
+      msg = setcolor('[' + user_cite[1] + '] ' + citation, 'italic');
+      if(message !== '') msg += '\n  -&gt; ' + message;
+    }
+    // Smileys
+    var tags = msg.match(/<.*?>/g);
+    if(tags) {
+      for(var i = 0; i < tags.length; i++) {
+        var alt = tags[i].match(/alt="(.*?)"/);
+        if(alt && alt.length == 2) {
+          msg = msg.replace(tags[i], alt[1]);
+        } else {
+          msg = msg.replace(tags[i], '');
+        }
+      }
+    }
+
+    // Code html
+    var $ = cheerio.load('');
+    msg = $('<p>' + msg + '</p>').text();
+
+    return msg;
+  },
+  fixColor: function(color) {
+    if(typeof color === 'undefined' || color === false) color = 'white';
+    else if(color == '#ffab46') color = 'yellow';
+    else if(color == '#ff358b') color = 'magenta';
+    else if(color == '#000') color = 'white';
+    else if(color == 'purple') color = 'cyan';
+    else if(color == '#046380') color = 'cyan';
+    return color;
+  },
+  showMessage: function(msg) { 
+    if(msg.message_type == 'bot_message')
+      chat.log('[BOT] ' + this.filter(msg.message), 'blue');
+    else if(msg.message_type == 'user_message')
+      chat.log('[' + setcolor(msg.pseudo, msg.color) + '] ' + this.filter(msg.message));
+    else if(msg.message_type == 'user_me')
+      chat.log(setcolor('* ' + setcolor(msg.pseudo, msg.color), 'italic') + ' ' +
+	setcolor(this.filter(msg.message) + ' *', 'italic'));
+    else if(msg.message_type == 'user_mp')
+      chat.log(setcolor('[MP]', 'green') + ' [' + setcolor(msg.pseudo, msg.color) +
+	'] ' + setcolor(this.filter(msg.message), 'green'));
+    else if(msg.message_type == 'user_spoil')
+      chat.log('[' + setcolor(msg.pseudo, msg.color) + ']' +
+	setcolor(setcolor(' [SPOIL] ', 'red'), 'bold') + this.filter(msg.message));
+    else chat.log('Message inconnu !', 'red');
+  }
+};
+
 function Chat()
 {
   this.buffer = [];
   this.connected = false;
   this.config = require('./Config');
 }
-
-Chat.prototype.filter = function(msg)
-{
-  // Citation
-  var citation = msg.match(/<bl.*?>(.*?)<\/b.*?e>/);
-  if(citation) {
-    var user_cite = citation[0].match(/.*?>Par (.*?)<.*?r>/);
-    citation = citation[0].replace(/.*?r>/, '');
-    msg = msg.replace(/.*?ote>/, '');
-    msg = setcolor('[' + user_cite[1] + '] ' + citation, 'italic') +
-          '\n  -&gt; ' + msg;
-  }
-
-  // Smileys
-  var tags = msg.match(/<.*?>/g);
-  if(tags)
-  {
-    for(var i = 0; i < tags.length; i++)
-    {
-      var alt = tags[i].match(/alt="(.*?)"/);
-      if(alt && alt.length == 2)
-      {
-        msg = msg.replace(tags[i], alt[1]);
-      }
-      else
-      {
-        msg = msg.replace(tags[i], '');
-      }
-    }
-  }
-
-  // Code html
-  var $ = cheerio.load('');
-  msg = $('<p>' + msg + '</p>').text();
-
-  return msg;
-};
 
 Chat.prototype.init = function()
 {
@@ -63,6 +83,14 @@ Chat.prototype.init = function()
   this.sock.on('youtube_player', this.onYoutube.bind(this));
 
   this.sock.on('connect', this.relog.bind(this));
+};
+
+Chat.prototype.changeMask = function() {
+  // 0-40, 54-56
+  // Donc 0-43 et si > 40, on ajoute 13
+  var randomMask = Math.floor(Math.random() * 44);
+  if(randomMask > 40) randomMask += 13;
+  this.sock.emit('message',{message:'/shop mask buy ' + randomMask});
 };
 
 Chat.prototype.relog = function() {
@@ -98,6 +126,7 @@ Chat.prototype.onInfo = function(msg) {
   if(msg.message.indexOf('Vos donn') !== 0) this.log(msg.message, 'blue');
 };
 Chat.prototype.onLog = function(msg) {
+  this.username = msg.pseudo;
   if(this.buffer.length > 0) {
     this.sock.emit('message',{message:this.buffer[0]});
     this.buffer.splice(0, 1);
@@ -109,37 +138,18 @@ Chat.prototype.onLog = function(msg) {
 };
 Chat.prototype.onMessage = function(msg) {
   if(msg.pseudo_lower == this.username) {
-    if(this.filter(msg.message) === '') this.log('SANDALE !', 'red');
+    if(Util.filter(msg.message) === '') this.log('SANDALE !', 'red');
     return;
   }
 
   for(var i in this.config.ignoreList) {
-    if(this.config.ignoreList[i] == msg.pseudo_lower) return;
+    if(this.config.ignoreList[i].toLowerCase() == msg.pseudo_lower) return;
   }
 
-  if(typeof msg.color === 'undefined' || msg.color === false) msg.color = 'white';
-  else if(msg.color == '#ffab46') msg.color = 'yellow';
-  else if(msg.color == '#ff358b') msg.color = 'magenta';
-  else if(msg.color == '#000') msg.color = 'white';
-  else if(msg.color == 'purple') msg.color = 'cyan';
-  else if(msg.color == '#046380') msg.color = 'cyan';
+  msg.color = Util.fixColor(msg.color);
+  Util.showMessage(msg);
 
-  if(msg.message_type == 'bot_message')
-    this.log('[BOT] ' + this.filter(msg.message), 'blue');
-  else if(msg.message_type == 'user_message')
-    this.log('[' + setcolor(msg.pseudo, msg.color) + '] ' + this.filter(msg.message));
-  else if(msg.message_type == 'user_me')
-    this.log(setcolor('* ' + setcolor(msg.pseudo, msg.color), 'italic') + ' ' +
-             setcolor(this.filter(msg.message) + ' *', 'italic'));
-  else if(msg.message_type == 'user_mp')
-    this.log(setcolor('[MP]', 'green') + ' [' + setcolor(msg.pseudo, msg.color) +
-             '] ' + setcolor(this.filter(msg.message), 'green'));
-  else if(msg.message_type == 'user_spoil')
-    this.log('[' + setcolor(msg.pseudo, msg.color) + ']' +
-             setcolor(setcolor(' [SPOIL] ', 'red'), 'bold') + this.filter(msg.message));
-  else this.log('Message inconnu !', 'red');
-
-  if(this.filter(msg.message) == ':morsay:') this.send(':japfuck:');
+  if(Util.filter(msg.message) == ':morsay:') this.send(':japfuck:');
 };
 Chat.prototype.onSuccess = function(msg) { this.log(msg.message, 'green'); };
 Chat.prototype.onYoutube = function(msg) {
@@ -148,15 +158,15 @@ Chat.prototype.onYoutube = function(msg) {
 
 // Envoie un message
 Chat.prototype.send = function(msg) {
-  this.buffer.push(msg);
-  this.relog();
+  this.sock.emit('message',{message:msg});
+  setTimeout(this.changeMask.bind(this), 300);
 };
 
 var chat = new Chat();
 chat.init();
 
 var rl = readline.createInterface(process.stdin, process.stdout);
-rl.setPrompt('[' + setcolor(chat.username, 'yellow') + '] ');
+rl.setPrompt('[' + setcolor(chat.username, 'cyan') + '] ');
 rl.on('line', function(line) {
   chat.send(line);
   rl.prompt(true);
