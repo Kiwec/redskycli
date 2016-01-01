@@ -41,6 +41,7 @@ var Util = {
     else if(color == '#000') color = 'white';
     else if(color == 'purple') color = 'cyan';
     else if(color == '#046380') color = 'cyan';
+    else color = 'white';
     return color;
   },
   showMessage: function(msg) { 
@@ -88,8 +89,7 @@ Chat.prototype.init = function()
 Chat.prototype.changeMask = function() {
   // 0-40, 54-56
   // Donc 0-43 et si > 40, on ajoute 13
-  var randomMask = Math.floor(Math.random() * 44);
-  if(randomMask > 40) randomMask += 13;
+  var randomMask = Math.floor(Math.random() * 56);
   this.sock.emit('message',{message:'/shop mask buy ' + randomMask});
 };
 
@@ -137,6 +137,16 @@ Chat.prototype.onLog = function(msg) {
   this.log('Connecte sous ' + msg.pseudo, 'green');
 };
 Chat.prototype.onMessage = function(msg) {
+ 
+  if(Util.filter(msg.message).indexOf('!play ') === 0) {
+    msg.message = Util.filter(msg.message);
+    msg.message = msg.message.split(' ')[1];
+    chat.log(msg.message);
+    msg.message = msg.message.substring(msg.message.indexOf('=') + 1);
+    chat.log(msg.message);
+    chat.send('/yt play ' + msg.message);
+  }
+
   if(msg.pseudo_lower == this.username) {
     if(Util.filter(msg.message) === '') this.log('SANDALE !', 'red');
     return;
