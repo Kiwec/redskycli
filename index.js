@@ -36,11 +36,20 @@ var Util = {
   },
   fixColor: function(color) {
     if(typeof color === 'undefined' || color === false) color = 'white';
-    else if(color == '#ffab46') color = 'yellow';
-    else if(color == '#ff358b') color = 'magenta';
-    else if(color == '#000') color = 'white';
-    else if(color == 'purple') color = 'cyan';
-    else if(color == '#046380') color = 'cyan';
+		// Admin
+    else if(color == '???') color = setcolor('red', 'bold');
+		// Modérateur
+    else if(color == '#457dbb') color = 'red';
+		// Manager
+    else if(color == '#bf00ff') color = 'green';
+		// Alpha
+    else if(color == '???') color = 'blue';
+		// Beta
+    else if(color == '#85c630') color = 'cyan';
+		// VIP
+		else if(color == '???') color = 'yellow';
+		// Sandale
+		else if(color == '#f5a6bf') color = 'magenta';
     else color = 'white';
     return color;
   },
