@@ -19,7 +19,7 @@ module.exports.fixColor = function(color) {
 		case '#ef4848': return 'red';
 		case '#457dbb': return 'red';
 		case '#bf00ff': return 'green';
-		case '#??????': return 'blue';
+		case '#046380': return 'blue';
 		case '#85c630': return 'cyan';
 		case '#ffab46': return 'yellow';
 		case '#f5a6bf': return 'magenta';
