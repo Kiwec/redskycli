@@ -73,9 +73,9 @@ SkyChat.prototype.onMessage = function(msg) {
 		if(cleanMsg.indexOf('de commission') !== -1) {
 			var giveMsg = msg.message.match(/<b>(.*?)<\/b>/g);
 			this.fireEvent('givepoints', {
-				from: Util.removeHTML(giveMsg[0]),
+				from: Util.removeHTML(giveMsg[2]),
 				amount: parseInt(Util.removeHTML(giveMsg[1]), 10),
-				to: Util.removeHTML(giveMsg[2])
+				to: Util.removeHTML(giveMsg[0])
 			});
 		// Random number generation
 		} else if(cleanMsg.indexOf('tiré par') !== -1) {
