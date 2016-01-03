@@ -16,12 +16,12 @@ module.exports.filter = function(msg) {
 
 module.exports.fixColor = function(color) {
 	switch(color) {
-		case '#ef4848': return setcolor('red', 'bold');
+		case '#ef4848': return 'red';
 		case '#457dbb': return 'red';
 		case '#bf00ff': return 'green';
 		case '#??????': return 'blue';
 		case '#85c630': return 'cyan';
-		case '#??????': return 'yellow';
+		case '#ffab46': return 'yellow';
 		case '#f5a6bf': return 'magenta';
 		default: return 'white';
 	}
