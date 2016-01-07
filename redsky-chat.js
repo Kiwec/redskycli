@@ -1,11 +1,13 @@
 var Config = require('./config');
 var io = require('socket.io-client');
+var request = require('request');
 var Util = require('./skychat-util');
 
 function SkyChat() {
 	this.events = {};
 	this.loggedin = false;
 	this.sock = io.connect('http://skychat.fr:8054');
+	this.lastTms = 0;
 
 	var eventList = ['alert', 'connected_list', 'info', 'success'];
 	for (var i in eventList) {
@@ -15,8 +17,11 @@ function SkyChat() {
 	}
 
 	this.sock.on('connect', this.onConnect.bind(this));
-	this.sock.on('message', this.onMessage.bind(this));
 	this.sock.on('log', this.onLog.bind(this));
+
+	setTimeout((function(){
+		this.sock.on('message', this.onMessage.bind(this));
+	}).bind(this), 5000);
 }
 
 // Calls registered event callbacks
@@ -50,22 +55,44 @@ SkyChat.prototype.on = function(event, callback) {
 };
 
 SkyChat.prototype.onConnect = function() {
-	this.sock.emit('log', {
-		hash: Config.hash,
-		pseudo: Config.username,
-		id: Config.id,
-		mobile: Config.mobile
-	});
+	var getHash = function(err, res, body) {
+		if(err) {
+			console.log(err);
+			return;
+		}
+
+		body = JSON.parse(body);
+
+		this.sock.emit('log', {
+			hash: body.hash,
+			pseudo: body.pseudo,
+			id: body.id,
+			tms: body.tms,
+			mobile: Config.mobile
+		});
+	};
+
+	var options = {
+		url: 'http://skychat.fr/ajax/account/api.php',
+		form: {
+			pseudo: Config.username,
+			pass: Config.password
+		}
+	};
+
+	request.post(options, getHash.bind(this));
 };
 
 SkyChat.prototype.onMessage = function(msg) {
 	var cleanMsg = Util.filter(msg);
-	if(msg.tms * 1000 < Date.now() - 2000) return;
+	if(msg.tms < this.lastTms) return;
+	this.lastTms = msg.tms;
 	if(msg.message.indexOf('!') === 0) {
+		var subArg = cleanMsg.indexOf(' ') + 1;
 		this.fireEvent('command', {
 			user: msg.pseudo,
 			name: cleanMsg.substring(1).split(' ')[0],
-			args: cleanMsg.substring(cleanMsg.indexOf(' ') + 1),
+			args: subArg ? cleanMsg.substring(subArg) : '',
 			nbArgs: cleanMsg.split(' ').length - 1
 		});
 	} else if(msg.pseudo == 'SkychatBot') {
@@ -99,15 +126,23 @@ SkyChat.prototype.onLog = function(args) {
 
 SkyChat.prototype.onServerInfo = function(args) {
 	this.fireEvent('server_info', args);
+	if(typeof args.message === 'undefined') return;
+	var msg = Util.filter(args.message);
+	var match = msg.match(/attendre (.*?) millis/);
+	if(match && match.length == 2 && typeof this.lastMessage !== 'undefined') {
+		console.log('Retrying sending message');
+		this.sendLater(this.lastMessage, match[1]);
+	}
 };
 
 SkyChat.prototype.send = function(message) {
-	this.sock.emit('message', { message: message });	
+	this.sock.emit('message', { message: message });
+	this.lastMessage = message;
 };
 
 SkyChat.prototype.sendLater = function(msg, delay) {
 		// 400ms = safe delay between messages
-	if(typeof delay === 'undefined') delay = 400;
+	if(typeof delay === 'undefined') delay = 1000;
 	setTimeout((function() { this.send(msg); }).bind(this), delay);
 
 };
