@@ -1,8 +1,7 @@
 var Config = require('./config');
 var fs = require('fs');
 var readline = require('readline');
-var SkyChatO = require('node-skychat');
-var SkyChat = new SkyChatO(Config);
+var SkyChat = require('node-skychat').init(Config);
 
 SkyChat.on('newmessage', log);
 SkyChat.on('server_info', function(msg) {
