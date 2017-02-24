@@ -13,7 +13,9 @@ function log(msg) {
 	process.stdout.cursorTo(0);
 	msg = SkyChat.format(msg);
 	console.log(msg);
-	fs.appendFile('log.txt', msg + '\n');
+	fs.appendFile('log.txt', msg + '\n', (err) => {
+		if(err) throw err;
+	});
 	rl.prompt(true);
 }
 
