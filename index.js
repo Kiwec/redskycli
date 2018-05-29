@@ -1,5 +1,4 @@
 var Config = require('./config');
-var fs = require('fs');
 var readline = require('readline');
 var SkyChat = require('node-skychat').init(Config);
 
@@ -13,9 +12,6 @@ function log(msg) {
 	process.stdout.cursorTo(0);
 	msg = SkyChat.format(msg);
 	console.log(msg);
-	fs.appendFile('log.txt', msg + '\n', (err) => {
-		if(err) throw err;
-	});
 	rl.prompt(true);
 }
 

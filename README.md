@@ -6,9 +6,9 @@ commande.
 # Installation
 
 ```sh
-$ npm install kiwec/skychatcli
-$ mv node_modules/skychatcli .
-$ nano config.js
+$ git clone https://github.com/kiwec/skychatcli.git
+$ cd skychatcli
+$ npm install
 $ node index.js
 ```
 
