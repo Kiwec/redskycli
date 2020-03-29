@@ -1,7 +1,6 @@
 # SkychatCLI
 
-Client pour se connecter au chat skychat.fr en ligne de 
-commande.
+Client pour se connecter au skychat en ligne de commande.
 
 # Installation
 
